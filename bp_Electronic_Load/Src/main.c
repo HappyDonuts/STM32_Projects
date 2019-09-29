@@ -64,6 +64,19 @@ static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 void check_ADC(ADC_HandleTypeDef *hadc, uint16_t *pData, uint16_t Size);
+double factor_correct(double adc_raw);
+//Fourier
+const double a0 = 0.461;
+const double a1 = -0.08749;
+const double b1 = -0.2792;
+const double a2 = -0.02242;
+const double b2 = -0.028;
+const double w = 0.008913;
+//Exponential
+const double a = 2.239;
+const double b = -0.03095;
+const double c = 1.827;
+const double d = -0.001121;
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -109,8 +122,10 @@ int main(void)
   ssd1306_sel_I2C(&hi2c1);
   SSD1306_Init ();
 
-HAL_TIM_Base_Start_IT(&htim2);
-HAL_TIM_Base_Start_IT(&htim3);
+//  HAL_ADCEx_Calibration_Start(&hadc1);
+
+  HAL_TIM_Base_Start_IT(&htim2);
+  HAL_TIM_Base_Start_IT(&htim3);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -352,6 +367,17 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+double factor_correct(double x){
+	// Fourier aprox
+	if (x < 250){
+		return a*exp(b*x) + c*exp(d*x);
+//		return a0 + a1*cos(x*w) + b1*sin(x*w) +
+//            a2*cos(2*x*w) + b2*sin(2*x*w);
+	} else {
+		return 1;
+	}
+}
+
 void check_ADC(ADC_HandleTypeDef *hadc, uint16_t *pData, uint16_t Size){
 	static uint8_t index_adc = 0;
 	static double processed_adc = 0;
@@ -367,9 +393,11 @@ void check_ADC(ADC_HandleTypeDef *hadc, uint16_t *pData, uint16_t Size){
 
 	if (index_adc >= Size ){
 		processed_adc = processed_adc/Size;
-		processed_adc = processed_adc/(10*0.9);
+		processed_adc = processed_adc*factor_correct(processed_adc);
+		processed_adc = processed_adc/10;
 		processed_adc = round(processed_adc);
 		processed_adc = processed_adc*10;
+
 
 		voltage_adc = processed_adc;
 		index_adc = 0;
