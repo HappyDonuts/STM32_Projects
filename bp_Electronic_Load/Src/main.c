@@ -369,7 +369,7 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 double factor_correct(double x){
 	// Fourier aprox
-	if (x < 250){
+	if ((x < 250) && (x > 40)){
 		return a*exp(b*x) + c*exp(d*x);
 //		return a0 + a1*cos(x*w) + b1*sin(x*w) +
 //            a2*cos(2*x*w) + b2*sin(2*x*w);
