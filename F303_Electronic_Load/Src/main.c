@@ -58,6 +58,21 @@ UART_HandleTypeDef huart2;
 /* USER CODE BEGIN PV */
 uint16_t rawValues[200] ;
 static double voltage_adc = 0;
+static double raw_adc = 0;
+static double factor = 0;
+
+//Fourier
+static double a0;
+static double a1;
+static double b1;
+static double a2;
+static double b2;
+static double w;
+//Exponential
+static double a1 = 0;
+static double b1 = 0;
+static double c1 = 0;
+static double d1 = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -71,6 +86,7 @@ static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 void check_ADC(ADC_HandleTypeDef *hadc, uint16_t *pData, uint16_t Size);
+double factor_correct(double adc_raw);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -476,6 +492,37 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+double factor_correct(double x){
+	if ((x < 250) && (x > 40)){
+		// Exp aprox
+		a1 = 2.239;
+		b1 = -0.03095;
+		c1 = 1.827;
+		d1 = -0.001121;
+		return (a1*exp(b1*x) + c1*exp(d1*x))*0.88;
+
+	} else if ((x >=250) && (x<620)){
+		// Fourier aprox
+		a0 = 1.196;
+		a1 = -0.03788;
+		b1 = 0.006196;
+		a2 = 0.00541;
+		b2 = -0.01333;
+		w = 0.01085;
+		return a0 + a1*cos(x*w) + b1*sin(x*w) +
+		            a2*cos(2*x*w) + b2*sin(2*x*w);
+	} else if ((x >= 620) && (x < 1200)) {
+		a1 = 1.21;
+		b1 = -0.0001777;
+		c1 = 0.03541;
+		d1 = 0.001033;
+		return (a1*exp(b1*x) + c1*exp(d1*x))*1.003;
+	} else {
+		return 1;
+	}
+
+}
+
 void check_ADC(ADC_HandleTypeDef *hadc, uint16_t *pData, uint16_t Size){
 	static uint8_t index_adc = 0;
 	static double processed_adc = 0;
@@ -491,17 +538,24 @@ void check_ADC(ADC_HandleTypeDef *hadc, uint16_t *pData, uint16_t Size){
 
 	if (index_adc >= Size ){
 		processed_adc = processed_adc/Size;
-//		processed_adc = processed_adc/(10*1);
+		raw_adc = processed_adc;
+
+		factor = factor_correct(processed_adc);
+		processed_adc = processed_adc*factor;
+		processed_adc = processed_adc/10;
+		raw_adc = raw_adc/10;
+
 		processed_adc = round(processed_adc);
-//		processed_adc = processed_adc*10;
+		raw_adc = round(raw_adc);
+
+		processed_adc = processed_adc*10;
+		raw_adc = raw_adc*10;
 
 		voltage_adc = processed_adc;
 		index_adc = 0;
 		processed_adc = 0;
-
+		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
 	}
-
-//	tx_UART_byte(&huart2, data_0, 10);
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
@@ -516,14 +570,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	if (htim == &htim3){
 		static uint8_t ready_3 = 0;
 		if (ready_3 == 1){
-//			voltage_adc = voltage_adc*100;
-//			voltage_adc = round(voltage_adc);
-//			voltage_adc = voltage_adc/100;
-
-//			double current = (voltage_adc - 1.66)/0.098;
 			SSD1306_Putdouble(voltage_adc, 1, 1);
+			SSD1306_Putdouble(raw_adc, 1, 2);
+			SSD1306_Putdouble(factor, 4, 3);
 			SSD1306_UpdateScreen();
-			HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_3);
 		}
 		ready_3 = 1;
 	}
