@@ -23,11 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <math.h>
-
-#include "mcp4725.h"
-#include "ads115.h"
-#include "ssd1306_basic.h"
+#include "electronic_load.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -51,15 +47,7 @@ TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 
 /* USER CODE BEGIN PV */
-mcp_t* mcp_1; //DAC module
-ssd1306_t* ssd1306_1;
-ads_t* ads_1;
 
-uint16_t target = 500;
-uint16_t dac_v = 2400;
-uint16_t current;
-double error;
-double correction;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -69,8 +57,7 @@ static void MX_I2C1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
-void sense_current(ads_t* ads);
-void stop();
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -111,31 +98,13 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-  mcp_1 = mcp_new(&hi2c1, 0xC0); //0xC4 - other address
-  ads_1 = ads_new(&hi2c1, 0x48);
-  ssd1306_1 = ssd1306_new(&hi2c1, 0x79);
-
-  mcp_write(mcp_1, 3000, 1);
-
-//  HAL_Delay(20);
-//
-//  HAL_TIM_Base_Start_IT(&htim2);
-//  HAL_TIM_Base_Start_IT(&htim3);
-
-
-//  mcp_write(mcp_1, dac_v, 1);
+  main_s();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-//
-
-//	  dac_v ++;
-//	  HAL_Delay(1000);
-//	  mcp_write(mcp_1, dac_v, 1);
-//	  mcp_write(mcp_1, 0, 1);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -332,62 +301,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void sense_current(ads_t* ads){
-//	static uint8_t index_values = 0;
-//	static uint16_t values[20];
 
-//	values[index_values] = ads_read(ads_1, 0, 0);
-	current = ads_read(ads_1, 4, 0);
-//	if (values[index_values] > 2000){
-//		stop();
-//	}
-	if (current > 2000){
-		stop();
-	}
-//	index_values++;
-//
-//	if (index_values == 20){
-//		double sum = 0;
-//		for (uint8_t i=0; i<20;i++){
-//			sum = sum + values[i];
-//		}
-//		sum = sum/20;
-//		current = round(sum);
-//		index_values = 0;
-
-//		if (current < target-100) {
-//			dac_v++;
-//		} else {
-//			dac_v = dac_v - 10;
-//		}
-//		mcp_write(mcp_1, dac_v, 1);
-//	}
-	error = target - current;
-	correction = error/100;
-	dac_v =  dac_v + correction;
-	mcp_write(mcp_1, dac_v, 1);
-}
-void stop(){
-	mcp_write(mcp_1, 0, 1);
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, 0);
-	while(1){
-
-	}
-
-}
-
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
-	if (htim == &htim2){
-		SSD1306_Putint(ssd1306_1, current, 1);
-		SSD1306_Putint(ssd1306_1, error, 3);
-		SSD1306_Putint(ssd1306_1, correction, 4);
-		SSD1306_Putint(ssd1306_1, dac_v, 5);
-		SSD1306_UpdateScreen(ssd1306_1);
-	}
-	if (htim == &htim3){
-		sense_current(ads_1);
-	}
-}
 /* USER CODE END 4 */
 
 /**

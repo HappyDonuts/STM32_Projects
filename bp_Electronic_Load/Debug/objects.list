@@ -1,4 +1,5 @@
 "Core/Src/ads115.o"
+"Core/Src/electronic_load.o"
 "Core/Src/fonts.o"
 "Core/Src/main.o"
 "Core/Src/mcp4725.o"

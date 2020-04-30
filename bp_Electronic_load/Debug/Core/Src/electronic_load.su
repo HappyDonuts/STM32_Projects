@@ -1,0 +1,2 @@
+electronic_load.c:39:6:main_s	8	static
+electronic_load.c:58:6:HAL_TIM_PeriodElapsedCallback	16	static
