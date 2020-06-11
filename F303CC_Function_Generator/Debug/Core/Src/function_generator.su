@@ -1,0 +1,3 @@
+function_generator.c:36:6:main_s	16	static
+function_generator.c:50:6:setSignal	24	static
+function_generator.c:61:6:HAL_TIM_PeriodElapsedCallback	24	static

@@ -1,0 +1,3 @@
+capacitance_meter.c:32:6:main_s	4	static
+capacitance_meter.c:46:6:HAL_TIM_PeriodElapsedCallback	16	static
+capacitance_meter.c:55:6:HAL_GPIO_EXTI_Callback	16	static
