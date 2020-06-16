@@ -1,2 +1,8 @@
-capacitance_meter.c:49:6:main_s	24	static
-capacitance_meter.c:109:6:HAL_TIM_PeriodElapsedCallback	16	static
+capacitance_meter.c:64:6:main_s	8	static
+capacitance_meter.c:86:9:select_ch	8	static
+capacitance_meter.c:104:12:channel_new	24	static
+capacitance_meter.c:111:10:charge_cap	40	static
+capacitance_meter.c:129:6:discharge_cap	16	static
+capacitance_meter.c:141:6:display_cap	24	static
+capacitance_meter.c:182:6:HAL_TIM_PeriodElapsedCallback	16	static
+capacitance_meter.c:197:6:HAL_GPIO_EXTI_Callback	16	static
