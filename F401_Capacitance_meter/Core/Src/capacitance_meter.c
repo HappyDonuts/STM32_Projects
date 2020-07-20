@@ -55,7 +55,7 @@ uint8_t select_ch(void);
 channel_t* channel_new(uint8_t num, GPIO_TypeDef* port, uint16_t pin);
 uint32_t charge_cap(channel_t* ch);
 void discharge_cap(uint16_t delay);
-void display_cap(void);
+void display_cap(uint32_t* values, uint8_t size);
 
 /**
   * @brief  The application entry point.
@@ -71,12 +71,18 @@ void main_s(void){
 	channels[3] = channel_new(4, PORT_Q4, PIN_Q4);
 	channels[4] = channel_new(5, PORT_Q5, PIN_Q5);
 
-	discharge_cap(1000);
-//	ch_sel = select_ch();
-	ch_sel = 2;
-	charge_cap(channels[ch_sel]);
-	charge_cap(channels[ch_sel]);
-	display_cap();
+	HAL_TIM_Base_Start_IT(tim_charge);
+	HAL_TIM_Base_Stop_IT(tim_charge);
+
+	uint8_t size = 1;
+	uint32_t values[size];
+
+	discharge_cap(500);
+	ch_sel = select_ch();
+	for (uint8_t i=0; i<size; i++){
+		values[i] = charge_cap(channels[ch_sel]);
+	}
+	display_cap(values, size);
 
 	while(1){
 		/* WHILE CODE */
@@ -84,16 +90,20 @@ void main_s(void){
 	}
 }
 uint8_t select_ch(void){
-	if (charge_cap(channels[4]) > 168000){
+	charge_cap(channels[4]);
+	if (counter > 168000){
 		return 4;
 	}
-	else if(charge_cap(channels[3]) > 16800){
+	charge_cap(channels[3]);
+	if (counter > 16800){
 		return 3;
 	}
-	else if(charge_cap(channels[2]) > 16800){
+	charge_cap(channels[2]);
+	if (counter > 16800){
 		return 2;
 	}
-//	else if(charge_cap(channels[1]) > 16800){
+//	pulses = charge_cap(channels[1]);
+//	if (pulses > 16800){
 //		return 1;
 //	}
 	else {
@@ -121,7 +131,7 @@ uint32_t charge_cap(channel_t* ch){
 	}
 	counter = (tim_charge->Instance->CNT + cycles*65000);
 	double time_constant = counter/F_CLK;
-	double delay_ms = 1+5*1000*time_constant;
+	double delay_ms = 1+6*1000*time_constant;
 	discharge_cap(delay_ms);
 	return counter;
 }
@@ -138,41 +148,44 @@ void discharge_cap(uint16_t delay){
 	status = DISCHARGED;
 }
 
-void display_cap(void){
-	double value;
+void display_cap(uint32_t* values, uint8_t size){
+	double mean;
+	for (uint8_t i=0; i<size; i++){
+		mean = values[i];
+	}
+	mean = mean/size;
+
 	switch (ch_sel){
 		case 0:
-			value = counter/84;
-			if (value > 1000){
-				value = value/1000;
-				SSD1306_Putdouble(display, value, 2, "nF", 1);
+			mean = mean/84;
+			if (mean > 1000){
+				mean = mean/1000;
+				SSD1306_Putdouble(display, mean, 1, "nF", 1);
 			} else {
-				SSD1306_Putdouble(display, value, 2, "pF", 1);
+				SSD1306_Putdouble(display, mean, 1, "pF", 1);
 			}
 			break;
 		case 1:
-			value = counter/(84*100);
-			SSD1306_Putdouble(display, value, 2, "nF", 1);
+			mean = counter/(84*100);
+			SSD1306_Putdouble(display, mean, 1, "nF", 1);
 			break;
 		case 2:
-			value = counter/(84*10);
-			SSD1306_Putdouble(display, value, 2, "nF", 1);
+			mean = counter/(84*10);
+			SSD1306_Putdouble(display, mean, 1, "nF", 1);
 			break;
 		case 3:
-			value = counter/84;
-			if (value > 1000){
-				value = value/1000;
-				SSD1306_Putdouble(display, value, 2, "uF", 1);
+			mean = counter/84;
+			if (mean > 1000){
+				mean = mean/1000;
+				SSD1306_Putdouble(display, mean, 1, "uF", 1);
 			} else {
-				SSD1306_Putdouble(display, value, 2, "nF", 1);
+				SSD1306_Putdouble(display, mean, 1, "nF", 1);
 			}
 			break;
 		case 4:
-			value = counter/(84*100);
-			SSD1306_Putdouble(display, value, 2, "uF", 1);
+			mean = counter/(84*100);
+			SSD1306_Putdouble(display, mean, 1, "uF", 1);
 	}
-
-	SSD1306_Putint(display, ch_sel, "ch", 2);
 	SSD1306_UpdateScreen(display);
 }
 /**
@@ -182,11 +195,7 @@ void display_cap(void){
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	/* TIM CALLBACK CODE */
 	if (htim == tim_charge){
-		static uint8_t ready = 0;
-		if (ready == 1){
-			cycles++;
-		}
-		ready = 1;
+		cycles++;
 	}
 }
 

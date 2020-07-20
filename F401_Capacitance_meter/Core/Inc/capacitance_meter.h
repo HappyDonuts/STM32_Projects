@@ -12,7 +12,6 @@
 
 typedef enum cap_status{
 	DISCHARGED,
-	CHARGING,
 	CHARGED
 } cap_status;
 
